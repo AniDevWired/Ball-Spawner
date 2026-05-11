@@ -36,7 +36,10 @@ Node *ll_begin(LinkedList *list) {
 }
 
 void ll_destroy(LinkedList *list) {
+
     Node *currentNode = list->head;
+
+    if(currentNode == NULL) return;
 
     while (currentNode != NULL) {
         Node *next = currentNode->next;

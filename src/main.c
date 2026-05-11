@@ -4,8 +4,9 @@
 #include "stdlib.h"
 #include <math.h>
 
-#define WINDOW_HEIGHT 700
-#define WINDOW_WIDTH 800
+#define WINDOW_HEIGHT 900
+#define WINDOW_WIDTH 1080
+#define SOUND_BUFFER 24
 
 typedef struct Ball {
     Vector2 pos;
@@ -35,6 +36,12 @@ int main(void) {
     InitAudioDevice();
 
     Sound pop = LoadSound("assets/pop.wav");
+
+    Sound popBuffer[SOUND_BUFFER];
+    for(int i = 0; i < SOUND_BUFFER; i++) {
+        popBuffer[i] = LoadSoundAlias(pop);
+    }
+    int soundIdx = 0;
 
     Ball *firstBall = (Ball *)malloc(sizeof(Ball));
     *firstBall = createBall();
@@ -67,6 +74,9 @@ int main(void) {
                     newBall->spawner = false;
                     ll_append(&toSpawnBalls, newBall);
                 }
+
+                PlaySound(popBuffer[soundIdx%SOUND_BUFFER]);
+                soundIdx++;
             }
 
             if(ball->pos.x  + ball->ballRadius > GetScreenWidth()) {
@@ -79,6 +89,9 @@ int main(void) {
                     newBall->spawner = false;
                     ll_append(&toSpawnBalls, newBall);
                 }
+
+                PlaySound(popBuffer[soundIdx%SOUND_BUFFER]);
+                soundIdx++;
             }
 
             if(ball->pos.y - ball->ballRadius < 0) {
@@ -91,6 +104,9 @@ int main(void) {
                     newBall->spawner = false;
                     ll_append(&toSpawnBalls, newBall);
                 }
+
+                PlaySound(popBuffer[soundIdx%SOUND_BUFFER]);
+                soundIdx++;
             }
 
             if(ball->pos.y + ball->ballRadius > GetScreenHeight()) {
@@ -103,6 +119,9 @@ int main(void) {
                     newBall->spawner = false;
                     ll_append(&toSpawnBalls, newBall);
                 }
+
+                PlaySound(popBuffer[soundIdx%SOUND_BUFFER]);
+                soundIdx++;
             }
 
             curr = curr->next;
@@ -114,6 +133,50 @@ int main(void) {
             ll_append(&balls, ball);
             currN = currN->next;
         }
+
+        ll_init(&toSpawnBalls, NULL); // destroy the toSpawnBall linkedList..
+
+        // // add collision
+        // Node *a = ll_begin(&balls);
+        // while (a != NULL) {
+        //     Ball *ballA = (Ball *)a->data;
+
+        //     Node *b = a->next;
+        //     while (b != NULL) {
+        //         Ball *ballB = (Ball *)b->data;
+
+        //         float dx = ballB->pos.x - ballA->pos.x;
+        //         float dy = ballB->pos.y - ballB->pos.y;
+        //         float dist = sqrtf(dx*dx + dy*dy);
+        //         float minDist = ballA->ballRadius + ballB->ballRadius;
+
+        //         if(dist < minDist && dist > 0.0f) {
+        //             float nx = dx/dist;
+        //             float ny = dy/dist;
+
+        //             float overLap = (minDist - dist) / 2.0f;
+        //             ballA->pos.x -= nx*overLap;
+        //             ballA->pos.y -= ny*overLap;
+        //             ballB->pos.x += nx*overLap;
+        //             ballB->pos.y += ny*overLap;
+
+        //             float dvx = ballA->ballSpeed.x - ballB->ballSpeed.x;
+        //             float dvy = ballA->ballSpeed.y - ballB->ballSpeed.y;
+        //             float dot = dvx * nx + dvy * ny;
+
+        //             if(dot > 0.0f) {
+        //                 ballA->ballSpeed.x -= dot * nx;
+        //                 ballA->ballSpeed.y -= dot * ny;
+        //                 ballB->ballSpeed.x += dot * nx;
+        //                 ballB->ballSpeed.y += dot * ny;
+        //             }
+        //         }
+        //         b = b->next;
+        //     }
+
+        //     a = a->next;
+        // }
+        
         
         BeginDrawing();
             ClearBackground(RAYWHITE);

@@ -7,6 +7,7 @@ CFLAGS = $(shell pkg-config --cflags raylib) \
 	-Werror \
 	-Wpedantic \
 	-std=c11 \
+	-lm
 
 LIBS = $(shell pkg-config --libs raylib)
 
