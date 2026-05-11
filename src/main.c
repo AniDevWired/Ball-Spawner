@@ -136,46 +136,69 @@ int main(void) {
 
         ll_init(&toSpawnBalls, NULL); // destroy the toSpawnBall linkedList..
 
-        // // add collision
-        // Node *a = ll_begin(&balls);
-        // while (a != NULL) {
-        //     Ball *ballA = (Ball *)a->data;
+        // add collision
+        Node *a = ll_begin(&balls);
+        while (a != NULL) {
+            Ball *ballA = (Ball *)a->data;
 
-        //     Node *b = a->next;
-        //     while (b != NULL) {
-        //         Ball *ballB = (Ball *)b->data;
+            Node *b = a->next;
+            while (b != NULL) {
+                Ball *ballB = (Ball *)b->data;
 
-        //         float dx = ballB->pos.x - ballA->pos.x;
-        //         float dy = ballB->pos.y - ballB->pos.y;
-        //         float dist = sqrtf(dx*dx + dy*dy);
-        //         float minDist = ballA->ballRadius + ballB->ballRadius;
+                float dx = ballB->pos.x - ballA->pos.x;
+                float dy = ballB->pos.y - ballA->pos.y;
 
-        //         if(dist < minDist && dist > 0.0f) {
-        //             float nx = dx/dist;
-        //             float ny = dy/dist;
+                float dist = sqrtf(dx*dx + dy*dy);
 
-        //             float overLap = (minDist - dist) / 2.0f;
-        //             ballA->pos.x -= nx*overLap;
-        //             ballA->pos.y -= ny*overLap;
-        //             ballB->pos.x += nx*overLap;
-        //             ballB->pos.y += ny*overLap;
+                if(dist < 0.001f) {
+                    b = b->next;
+                    continue;
+                }
 
-        //             float dvx = ballA->ballSpeed.x - ballB->ballSpeed.x;
-        //             float dvy = ballA->ballSpeed.y - ballB->ballSpeed.y;
-        //             float dot = dvx * nx + dvy * ny;
+                float overlap = ballA->ballRadius + ballB->ballRadius - dist;
 
-        //             if(dot > 0.0f) {
-        //                 ballA->ballSpeed.x -= dot * nx;
-        //                 ballA->ballSpeed.y -= dot * ny;
-        //                 ballB->ballSpeed.x += dot * nx;
-        //                 ballB->ballSpeed.y += dot * ny;
-        //             }
-        //         }
-        //         b = b->next;
-        //     }
+                if(overlap > 0.0f) {
+                    float collisionNormalX = dx / dist;
+                    float collisionNormalY = dy / dist;
 
-        //     a = a->next;
-        // }
+                    float something = overlap * 0.51f;
+
+                    ballA->pos.x -= collisionNormalX * something;
+                    ballA->pos.y -= collisionNormalY * something;
+                    ballB->pos.x += collisionNormalX * something;
+                    ballB->pos.y += collisionNormalY * something;
+
+                    float dvx = ballB->ballSpeed.x - ballA->ballSpeed.x;
+                    float dvy = ballB->ballSpeed.y - ballA->ballSpeed.y;
+
+                    float velocityAlongNormal = dvx * collisionNormalX + dvy * collisionNormalY;
+
+                    if(velocityAlongNormal < 0) {
+
+                        float restitution = 1.0f; // ideal for now.
+
+                        float impulse = -(1.0f + restitution) * velocityAlongNormal;
+
+                        impulse /= 2.0f;
+
+                        float impulseX = impulse*collisionNormalX;
+                        float impulseY = impulse*collisionNormalY;
+
+                        ballA->ballSpeed.x -= impulseX;
+                        ballA->ballSpeed.y -= impulseY;
+                        ballB->ballSpeed.x += impulseX;
+                        ballB->ballSpeed.y += impulseY;
+                    }
+                }
+                b = b->next;
+            }
+
+            a = a->next;
+        }
+
+        if(ll_length(&balls) >= 9) {
+            firstBall->spawner = false;
+        }
         
         
         BeginDrawing();
