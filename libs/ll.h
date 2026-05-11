@@ -30,6 +30,9 @@ size_t ll_length(LinkedList *list);
 /* Get head */
 Node *ll_begin(LinkedList *list);
 
+/* Delete a node */
+void ll_delete(LinkedList *list, void *data);
+
 /* Destroy :D */
 void ll_destroy(LinkedList *list);
 

@@ -35,6 +35,39 @@ Node *ll_begin(LinkedList *list) {
     return list->head;
 }
 
+void ll_delete(LinkedList *list, void *data) {
+
+    if(list == NULL || list->head == NULL) {
+        return;
+    }
+
+    Node *curr = list->head;
+    Node *prev = NULL;
+
+    while (curr != NULL) {
+        //target node is found
+        if(curr->data == data) {
+            if(prev == NULL) {
+                list->head = curr->next;
+            } else {
+                prev->next = curr->next;
+            }
+
+            if(list->destroy != NULL) {
+                list->destroy(curr->data);
+            }
+
+            free(curr);
+            list->length = list->length-1;
+            return;
+        }
+        
+        prev = curr;
+        curr = curr->next;
+    }
+    
+}
+
 void ll_destroy(LinkedList *list) {
 
     Node *currentNode = list->head;

@@ -3,6 +3,7 @@
 #include <time.h>
 #include "stdlib.h"
 #include <math.h>
+#include <stdio.h>
 
 #define WINDOW_HEIGHT 900
 #define WINDOW_WIDTH 1080
@@ -13,8 +14,9 @@ typedef struct Ball {
     Vector2 ballSpeed;
     float ballRadius;
     Color color;
-    //int powLvl;
+    int powLvl;
     bool spawner;
+    bool canIDestroy;
 } Ball;
 
 Ball createBall(void);
@@ -36,6 +38,7 @@ int main(void) {
     InitAudioDevice();
 
     Sound pop = LoadSound("assets/pop.wav");
+    Sound funny = LoadSound("assets/funny.wav");
 
     Sound popBuffer[SOUND_BUFFER];
     for(int i = 0; i < SOUND_BUFFER; i++) {
@@ -43,12 +46,20 @@ int main(void) {
     }
     int soundIdx = 0;
 
+    Sound popBuffer2[SOUND_BUFFER];
+    for(int i = 0; i < SOUND_BUFFER; i++) {
+        popBuffer2[i] = LoadSoundAlias(funny);
+    }
+    int soundIdx2 = 0;
+
     Ball *firstBall = (Ball *)malloc(sizeof(Ball));
     *firstBall = createBall();
     firstBall->spawner = true;
     ll_append(&balls, firstBall);
 
     //SetTargetFPS(100);
+
+    Font font = GetFontDefault();
 
     while (!WindowShouldClose()) {
 
@@ -61,8 +72,8 @@ int main(void) {
         while (curr != NULL) {
             Ball *ball = (Ball *)curr->data;
 
-            ball->pos.x += ball->ballSpeed.x*dt*100;
-            ball->pos.y += ball->ballSpeed.y*dt*100;
+            ball->pos.x += ball->ballSpeed.x*dt*50;
+            ball->pos.y += ball->ballSpeed.y*dt*50;
 
             if(ball->pos.x  - ball->ballRadius < 0) {
                 ball->pos.x = ball->ballRadius;
@@ -71,7 +82,8 @@ int main(void) {
                 if(ball->spawner) {
                     Ball *newBall = (Ball *)malloc(sizeof(Ball));
                     *newBall = createBall();
-                    newBall->spawner = false;
+                    newBall->spawner = true;
+                    newBall->canIDestroy = false;
                     ll_append(&toSpawnBalls, newBall);
                 }
 
@@ -86,7 +98,8 @@ int main(void) {
                 if(ball->spawner) {
                     Ball *newBall = (Ball *)malloc(sizeof(Ball));
                     *newBall = createBall();
-                    newBall->spawner = false;
+                    newBall->spawner = true;
+                    newBall->canIDestroy = false;
                     ll_append(&toSpawnBalls, newBall);
                 }
 
@@ -101,7 +114,8 @@ int main(void) {
                 if(ball->spawner) {
                     Ball *newBall = (Ball *)malloc(sizeof(Ball));
                     *newBall = createBall();
-                    newBall->spawner = false;
+                    newBall->spawner = true;
+                    newBall->canIDestroy = false;
                     ll_append(&toSpawnBalls, newBall);
                 }
 
@@ -116,7 +130,8 @@ int main(void) {
                 if(ball->spawner) {
                     Ball *newBall = (Ball *)malloc(sizeof(Ball));
                     *newBall = createBall();
-                    newBall->spawner = false;
+                    newBall->spawner = true;
+                    newBall->canIDestroy = false;
                     ll_append(&toSpawnBalls, newBall);
                 }
 
@@ -133,8 +148,8 @@ int main(void) {
             ll_append(&balls, ball);
             currN = currN->next;
         }
-
-        ll_init(&toSpawnBalls, NULL); // destroy the toSpawnBall linkedList..
+        toSpawnBalls.destroy = NULL;
+        ll_destroy(&toSpawnBalls); // destroy the toSpawnBall linkedList..
 
         // add collision
         Node *a = ll_begin(&balls);
@@ -188,16 +203,55 @@ int main(void) {
                         ballA->ballSpeed.y -= impulseY;
                         ballB->ballSpeed.x += impulseX;
                         ballB->ballSpeed.y += impulseY;
+
+                        // reduce points
+                        int diff = abs(ballA->powLvl - ballB->powLvl);
+                        if(diff == 0) {
+                            ballA->powLvl = ballB->powLvl = -1;
+                        }
+                        ballA->powLvl -= diff;
+                        ballB->powLvl -= diff;
+
+                        if (ballA->powLvl <= 0) ballA->canIDestroy = true;
+                        if (ballB->powLvl <= 0) ballB->canIDestroy = true;
                     }
                 }
+
                 b = b->next;
             }
 
             a = a->next;
         }
 
+        Node *NcurrNN = ll_begin(&balls);
+        while (NcurrNN != NULL) {
+
+            Node *next = NcurrNN->next;
+            Ball *ball = (Ball *)NcurrNN->data;
+
+            if(ball->canIDestroy) {
+                PlaySound(popBuffer2[soundIdx2%SOUND_BUFFER]);
+                soundIdx2++;
+                ll_delete(&balls, ball);
+            }
+            NcurrNN = next;
+        }
+        
+
         if(ll_length(&balls) >= 9) {
-            firstBall->spawner = false;
+            Node *NcurrN = ll_begin(&balls);
+            while(NcurrN != NULL) {
+                Ball *ball = (Ball *)NcurrN->data;
+                ball->spawner = false;
+                NcurrN = NcurrN->next;
+            }
+        } else {
+            Node *NcurrN = ll_begin(&balls);
+            while(NcurrN != NULL) {
+                Ball *ball = (Ball *)NcurrN->data;
+                ball->spawner = true;
+                NcurrN = NcurrN->next;
+            }
         }
         
         
@@ -207,7 +261,18 @@ int main(void) {
             Node *currNN = ll_begin(&balls);
             while (currNN != NULL) {
                 Ball *ball = (Ball *)currNN->data;
+                
+                char powLVL[4];
+
+                snprintf(powLVL, sizeof(powLVL), "%d", ball->powLvl);
+
+                int fontSize = ball->ballRadius - 10;
+
+                Vector2 textSize = MeasureTextEx(font, powLVL, fontSize, 1);
+
                 DrawCircleV(ball->pos, ball->ballRadius, ball->color);
+                DrawText(powLVL, ball->pos.x - textSize.x/2, ball->pos.y - textSize.y/2, fontSize, RAYWHITE);
+
                 currNN = currNN->next;
             }
                         
@@ -232,8 +297,8 @@ Ball createBall(void) {
     newBall.ballSpeed.x = (float)GetRandomValue(3, 6);
     newBall.ballSpeed.y = (float)GetRandomValue(3, 6);
 
-    // rad
-    newBall.ballRadius = GetRandomValue(10, 90);
+    // radius
+    newBall.ballRadius = GetRandomValue(35, 90);
 
     // color
 
@@ -254,6 +319,12 @@ Ball createBall(void) {
     int count = sizeof(colors) / sizeof(colors[0]);
 
     newBall.color = colors[rand()%count];
+
+    // powLvl
+    newBall.powLvl = GetRandomValue(10,99);
+
+    newBall.canIDestroy = false;
+    newBall.spawner = false;
 
     return newBall;
 }
